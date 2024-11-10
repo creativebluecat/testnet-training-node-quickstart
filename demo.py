@@ -87,6 +87,11 @@ def train_lora(
     # Train model
     trainer.train()
 
+    # Evaluate the model on the validation set
+    eval_result = trainer.evaluate()
+    eval_loss = eval_result["eval_loss"]
+    print(f"Evaluation Loss: {eval_loss}")
+
     # save model
     trainer.save_model("outputs")
 
@@ -95,3 +100,4 @@ def train_lora(
 
     # upload lora weights and tokenizer
     print("Training Completed.")
+    return eval_loss
