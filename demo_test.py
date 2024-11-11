@@ -22,9 +22,11 @@ class LoraTrainingArguments:
 
 
 def train_lora(
-    model_id: str, context_length: int, training_args: LoraTrainingArguments,callback=None  # 新增的回调参数
+        model_id: str, context_length: int, training_args: LoraTrainingArguments, callback=None  # 新增的回调参数
 ):
     assert model_id in model2template, f"model_id {model_id} not supported"
+    logger.info(f"Loading model {model_id}...")
+
     lora_config = LoraConfig(
         r=training_args.lora_rank,
         target_modules=[
@@ -56,6 +58,8 @@ def train_lora(
         num_train_epochs=training_args.num_train_epochs,
         max_seq_length=context_length,
     )
+
+    logger.info("Loading tokenizer and model...")
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         use_fast=True,
@@ -68,6 +72,7 @@ def train_lora(
     )
 
     # Load dataset
+    logger.info("Loading training and evaluation datasets...")
     dataset = SFTDataset(
         file="demo_data.jsonl",
         tokenizer=tokenizer,
@@ -98,6 +103,7 @@ def train_lora(
         trainer.add_callback(callback)
 
     # Train model
+    logger.info("Starting model training...")
     trainer.train()
 
     # Evaluate the model on the validation set
@@ -108,6 +114,8 @@ def train_lora(
     else:
         eval_loss = float("inf")  # 当使用回调时，eval_loss 由回调处理
 
+    logger.info(f"Training completed with eval_loss: {eval_loss}")
+
     # save model
     trainer.save_model("outputs")
 
@@ -115,5 +123,5 @@ def train_lora(
     os.system("rm -rf outputs/checkpoint-*")
 
     # upload lora weights and tokenizer
-    print("Training Completed.")
+    logger.info("Training Completed.")
     return eval_loss

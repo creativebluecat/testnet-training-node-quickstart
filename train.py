@@ -15,7 +15,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class LoraTrainingArguments:
     per_device_train_batch_size: int
@@ -24,7 +23,6 @@ class LoraTrainingArguments:
     lora_rank: int
     lora_alpha: int
     lora_dropout: float  # 确保是 float 类型以支持小数点
-
 
 # 定义回调接口
 class OptunaPruningCallback:
@@ -40,8 +38,6 @@ class OptunaPruningCallback:
                 if self.trial.should_prune():
                     control.should_prune = True
         return control
-
-
 
 # Optuna Objective function for optimization
 def objective(trial: Trial):
@@ -85,13 +81,14 @@ def objective(trial: Trial):
 
     # 训练模型并获取验证损失
     try:
+        logger.info("Starting training with the following parameters:")
         eval_loss = train_lora(
             model_id=model_id,
             context_length=context_length,
             training_args=training_args,
             callback=pruning_callback  # 传入回调
         )
-        # 当使用回调时，eval_loss 由回调处理，不需要额外处理
+        logger.info(f"Training completed. Eval loss: {eval_loss}")
     except optuna.exceptions.TrialPruned:
         logger.info(f"Trial {trial.number} pruned.")
         raise
@@ -105,6 +102,8 @@ def objective(trial: Trial):
 
 # 运行 Optuna 优化流程
 def run_optuna():
+    logger.info("Starting Optuna optimization process.")
+
     # 定义剪枝策略
     pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=0, interval_steps=1)
 
