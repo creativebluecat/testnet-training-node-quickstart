@@ -22,7 +22,7 @@ class LoraTrainingArguments:
 
 
 def train_lora(
-    model_id: str, context_length: int, training_args: LoraTrainingArguments
+    model_id: str, context_length: int, training_args: LoraTrainingArguments,callback=None  # 新增的回调参数
 ):
     assert model_id in model2template, f"model_id {model_id} not supported"
     lora_config = LoraConfig(
@@ -75,17 +75,38 @@ def train_lora(
         template=model2template[model_id],
     )
 
+    # 加载验证数据集
+    eval_dataset = SFTDataset(
+        file="tmptx0y856x",  # 替换为实际验证数据路径
+        tokenizer=tokenizer,
+        max_seq_length=context_length,
+        template=model2template[model_id],
+    )
+
     # Define trainer
     trainer = SFTTrainer(
         model=model,
         train_dataset=dataset,
+        eval_dataset=eval_dataset,  # 传入验证集
         args=training_args,
         peft_config=lora_config,
         data_collator=SFTDataCollator(tokenizer, max_seq_length=context_length),
     )
 
+    # 添加回调（如果提供）
+    if callback:
+        trainer.add_callback(callback)
+
     # Train model
     trainer.train()
+
+    # Evaluate the model on the validation set
+    # 评估模型（在回调中已经处理）
+    if not callback:
+        eval_result = trainer.evaluate()
+        eval_loss = eval_result.get("eval_loss", float("inf"))
+    else:
+        eval_loss = float("inf")  # 当使用回调时，eval_loss 由回调处理
 
     # save model
     trainer.save_model("outputs")
