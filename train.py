@@ -6,7 +6,8 @@ from optuna.samplers import TPESampler
 from optuna.pruners import MedianPruner
 import logging
 from optuna.visualization import plot_optimization_history, plot_param_importances
-
+import os
+os.environ["HF_TOKEN"] = "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"
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,

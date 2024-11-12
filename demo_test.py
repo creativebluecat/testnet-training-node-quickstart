@@ -7,9 +7,15 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTTrainer, SFTConfig
 
 from dataset import SFTDataCollator, SFTDataset
-from merge import merge_lora_to_base_model
+import logging
 from utils.constants import model2template
-
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 @dataclass
 class LoraTrainingArguments:
