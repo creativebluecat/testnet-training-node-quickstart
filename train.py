@@ -1,13 +1,16 @@
 import optuna
 from dataclasses import dataclass
-from demo_test import train_lora
+from demo_test import train_lora  # 请根据你的实际模块名称调整
 from optuna import Trial
 from optuna.samplers import TPESampler
 from optuna.pruners import MedianPruner
 import logging
 from optuna.visualization import plot_optimization_history, plot_param_importances
 import os
-os.environ["HF_TOKEN"] = "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"
+
+# 设置环境变量
+os.environ["HF_TOKEN"] = "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"  # 替换为你的 Hugging Face Token
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -30,8 +33,18 @@ class OptunaPruningCallback:
     def __init__(self, trial):
         self.trial = trial
 
+    def on_train_begin(self, args, state, control, **kwargs):
+        # 训练开始时调用
+        logger.info(f"Training begins for Trial {self.trial.number}")
+        return control
+
+    def on_epoch_begin(self, args, state, control, **kwargs):
+        # 每个 epoch 开始时调用
+        logger.info(f"Epoch {state.epoch} begins for Trial {self.trial.number}")
+        return control
+
     def on_epoch_end(self, args, state, control, **kwargs):
-        # 获取当前的评估损失
+        # 每个 epoch 结束时调用
         if state.is_world_process_zero:
             eval_loss = state.log_history[-1].get('eval_loss', None)
             if eval_loss is not None:
@@ -40,12 +53,29 @@ class OptunaPruningCallback:
                     control.should_prune = True
         return control
 
-# Optuna Objective function for optimization
+    def on_train_end(self, args, state, control, **kwargs):
+        # 训练结束时调用
+        logger.info(f"Training ends for Trial {self.trial.number}")
+        return control
+
+    def on_step_begin(self, args, state, control, **kwargs):
+        # 每步训练开始时调用
+        logger.info(f"Step {state.global_step} begins for Trial {self.trial.number}")
+        return control
+
+    def on_step_end(self, args, state, control, **kwargs):
+        # 每步训练结束时调用
+        logger.info(f"Step {state.global_step} ends for Trial {self.trial.number}")
+        return control
+
+
+
+# Optuna 目标函数（优化目标）
 def objective(trial: Trial):
     model_id = 'Qwen/Qwen1.5-1.8B'  # 替换为实际的模型 ID
     context_length = 512  # 假设上下文长度为 512
 
-    # 使用 Optuna 建议超参数
+    # 使用 Optuna 建议的超参数
     per_device_train_batch_size = trial.suggest_int("per_device_train_batch_size", 1, 16)
     gradient_accumulation_steps = trial.suggest_int("gradient_accumulation_steps", 1, 16)
     num_train_epochs = trial.suggest_int("num_train_epochs", 1, 5)
