@@ -7,7 +7,7 @@ from optuna.pruners import MedianPruner
 import logging
 from optuna.visualization import plot_optimization_history, plot_param_importances
 import os
-
+from transformers import TrainerCallback
 # 设置环境变量
 os.environ["HF_TOKEN"] = "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"  # 替换为你的 Hugging Face Token
 
@@ -28,8 +28,9 @@ class LoraTrainingArguments:
     lora_alpha: int
     lora_dropout: float  # 确保是 float 类型以支持小数点
 
-# 定义回调接口
-class OptunaPruningCallback:
+# 定义回调接口  # 引入 TrainerCallback 基类
+
+class OptunaPruningCallback(TrainerCallback):
     def __init__(self, trial):
         self.trial = trial
 
@@ -53,20 +54,6 @@ class OptunaPruningCallback:
                     control.should_prune = True
         return control
 
-    def on_train_end(self, args, state, control, **kwargs):
-        # 训练结束时调用
-        logger.info(f"Training ends for Trial {self.trial.number}")
-        return control
-
-    def on_step_begin(self, args, state, control, **kwargs):
-        # 每步训练开始时调用
-        logger.info(f"Step {state.global_step} begins for Trial {self.trial.number}")
-        return control
-
-    def on_step_end(self, args, state, control, **kwargs):
-        # 每步训练结束时调用
-        logger.info(f"Step {state.global_step} ends for Trial {self.trial.number}")
-        return control
 
 
 
